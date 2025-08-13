@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Park Effects</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        #tooltip {
+            position: absolute;
+            background: lightgray;
+            padding: 5px;
+            border-radius: 5px;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- <label for="leagueFilter">League:</label>
+    <select id="leagueFilter">
+        <option value="all">All</option>
+        <option value="AL">AL</option>
+        <option value="NL">NL</option>
+    </select> -->
+    <div>
+        <label for="fenceFilter">Fence Selection:</label>
+        <select id="fenceFilter">
+            <option value="left_field">Left Field</option>
+            <option value="center_field">Center Field</option>
+            <option value="right_field">Right Field</option>
+        </select>
+    </div>
+
+    <div>
+        <label for="viewToggle">View:</label>
+        <select id="viewToggle">
+            <option value="scatter">Scatter Plot</option>
+            <option value="barchart">Bar Chart</option>
+        </select>
+    </div>
+    
+    <svg width="800" height="500"></svg>
+    <div id="tooltip"></div>
+    
+    <script>
+        const margin = { top: 50, right: 50, bottom: 50, left: 50 },
+              width = 800 - margin.left - margin.right,
+              height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("svg")
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        let allData;
+        let currentView = "scatter";
+        let fenceColumn = "left_field"
+
+        d3.csv("ballparks.csv").then(data => {
+            data.forEach(d => {
+                d.left_field = +d.left_field;
+                d.center_field = +d.center_field;
+                d.right_field = +d.right_field;
+                d.hr_park_effects = +d.hr_park_effects;
+            });
+
+            allData = data;
+            updateChart(allData, fenceColumn);
+
+        });
+
+
+        function updateChart(data, fenceColumn) {
+            svg.selectAll("*").remove();
+            const transformedData = data.map(d => ({
+                ballpark: d.ballpark, 
+                hr_park_effects: d.hr_park_effects,
+                fence_length: d[fenceColumn]
+            }));
+
+            if (currentView === "scatter") {
+                drawScatterPlot(transformedData);
+            } else {
+                drawBarChart(transformedData);
+            }
+        }
+
+
+        function drawScatterPlot(data) {
+            console.log(data)
+            const xScale = d3.scaleLinear()
+                .domain([300,425])
+                .range([0, width]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            svg.append("text")
+                .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 10) + ")")
+                .style("text-anchor", "middle")
+                .style("font-weight", "bold")
+                .text("Fence Distance (ft)");
+
+            const yScale = d3.scaleLinear()
+                .domain([70,150])
+                .range([height, 0]);
+
+            svg.append("g")
+                .call(d3.axisLeft(yScale));
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -30)
+                .attr("x", 0 - (height / 2))
+                .style("text-anchor", "middle")
+                .style("font-weight", "bold")
+                .text("HR Park Effect");
+            
+            svg.selectAll("circle")
+                .data(data)
+                .enter()
+                .append("circle")
+                .attr("cx", d => xScale(d.fence_length))
+                .attr("cy", d => yScale(d.hr_park_effects))
+                .attr("r", 5)
+                .attr("fill", "steelblue")
+                .on("mouseover", (event, d) => {
+                    d3.select("#tooltip")
+                        .style("visibility", "visible")
+                        .html(`Ballpark: ${d.ballpark} 
+                               <br> Fence Distance: ${d.fence_length}
+                               <br> HR Effect: ${d.hr_park_effects}`);
+                })
+                .on("mousemove", (event) => {
+                    d3.select("#tooltip")
+                        .style("top", `${event.pageY - 10}px`)
+                        .style("left", `${event.pageX + 10}px`);
+                })
+                .on("mouseout", () => {
+                    d3.select("#tooltip").style("visibility", "hidden");
+                });
+        }
+
+
+        function drawBarChart(data) {
+
+            data.sort(function(a, b) {
+                return d3.ascending(a.fence_length, b.fence_length);
+            });
+
+            const ranges = ["310-315", "315-320","320-325","325-330","330-335",
+                            "335-340","340-345","345-350","350-355",
+                            "355-360","360-365","365-370","370-375",
+                            "375-380","380-385","385-390","390-395",
+                            "395-400", "400-405", "405-410", 
+                            "410-415","415-420", "420-425"];
+
+            const groupedData = ranges.map(range => {
+                const [start, end] = range.split('-').map(d => +d);
+                const filteredData = data.filter(d => d.fence_length >= start && d.fence_length < end);
+                const avgHrParkEffect = filteredData.length > 0 ? d3.mean(filteredData, d => d.hr_park_effects) : 0;
+                return { range, avgHrParkEffect };
+            });
+
+            const xScale = d3.scaleBand()
+                .range([0, width])
+                .domain(groupedData.map(d => d.range))
+                .padding(0.05);
+
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end")
+            
+            svg.append("text")
+                .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom) + ")")
+                .style("text-anchor", "middle")
+                .style("font-weight", "bold")
+                .text("Fence Distance (ft)");
+
+            const yScale = d3.scaleLinear()
+                .domain([0, 130])
+                .range([height, 0])
+
+            svg.append("g")
+                .call(d3.axisLeft(yScale));
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -30)
+                .attr("x", 0 - (height / 2))
+                .style("text-anchor", "middle")
+                .style("font-weight", "bold")
+                .text("Average HR Park Effect");
+
+            svg.selectAll("rect")
+                .data(groupedData)
+                .enter()
+                .append("rect")
+                .attr("x", function(d) {return xScale(d.range); })
+                .attr("y", function(d) { return yScale(d.avgHrParkEffect); })
+                .attr("width", xScale.bandwidth())
+                .attr("height", function(d) { return height - yScale(d.avgHrParkEffect); })
+                .attr("fill", "steelblue")
+                .on("mouseover", function(event, d) {
+                    d3.select("#tooltip")
+                        .style("visibility", "visible")
+                        .html(`Distance Range: ${d.range}ft 
+                               <br> Avg HR Effect: ${d.avgHrParkEffect.toFixed(2)}`);
+                })
+                .on("mousemove", function(event) {
+                    d3.select("#tooltip")
+                        .style("top", `${event.pageY - 10}px`)
+                        .style("left", `${event.pageX + 10}px`);
+                })
+                .on("mouseout", function() {
+                    d3.select("#tooltip").style("visibility", "hidden");
+                });
+        }
+
+        // document.getElementById("leagueFilter").addEventListener("change", function() {
+        //     const selectedLeague = this.value;
+        //     const filteredData = selectedLeague === "all" ? allData : allData.filter(d => d.league === selectedLeague);
+        //     updateChart(filteredData);
+        // });
+
+        document.getElementById("fenceFilter").addEventListener("change", function() {
+            fenceColumn = this.value;
+            updateChart(allData, fenceColumn);
+
+        });
+
+        document.getElementById("viewToggle").addEventListener("change", function() {
+            currentView = this.value;
+            updateChart(allData, fenceColumn);
+        });
+
+    </script>
+</body>
+</html>

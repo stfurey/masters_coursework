@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2022 NFL Simulation</title>
+  <style>
+
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 100px;
+        padding: 10px;
+        font-size: 16px;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        color: #333;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    select:hover {
+        background-color: #e0e0e0;
+    }
+
+    select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    }
+
+    label {
+        font-size: 18px;
+        font-weight: bold;
+        color: "black";
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    .box { 
+        fill: lightskyblue;
+        opacity: 1;
+        stroke: black;
+        stroke-width: 2;
+    }
+
+    .whisker { 
+        stroke: black;
+        stroke-width: 2;
+    }
+
+    .median { 
+        stroke: black;
+        stroke-width: 2;
+    }
+
+    .choices {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .choicesColumn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-left: 85px;
+        margin-top: 5px;
+    }
+
+    .additionalViz {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .vizColumn {
+        display: flex;
+        flex-direction: column;
+        margin-left: 33px;
+        margin-top: 5px;
+    }
+
+    #totalPlaysDescriptionTextBox,
+    #runningPlaysDescriptionTextBox,
+    #successRateDescriptionTextBox {
+        width: 350px;
+        height: 50px;
+        font-size: 36px;
+        text-align: center;
+        line-height: 50px;
+        outline: none;
+        resize: none;
+    }
+
+    #totalPlaysTextBox {
+        margin-top: 10px;
+        margin-left: 85px;
+        margin-right: 85px;
+        width: 180px;
+        height: 100px;
+        font-size: 84px;
+        text-align: center;
+        line-height: 100px;
+        resize: none;
+    }
+
+    #successRateTextBox {
+        margin-top: 10px;
+        margin-left: 65px;
+        margin-right: 65px;
+        width: 220px;
+        height: 100px;
+        font-size: 84px;
+        text-align: center;
+        line-height: 100px;
+        resize: none;
+    }
+
+    #runningPlays {
+        margin-top: 15px;
+        height: 100px;
+        width: 350px;
+    }
+
+  </style>
+</head>
+<body>
+  <script src="https://d3js.org/d3.v6.js"></script>
+
+  <div class="choices">
+    <!-- Ball Position -->
+    <div class="choicesColumn">
+        <label for="ballPosition">Ball Position</label>
+        <select id="ballPosition">
+        <option value=5>Own 5</option>
+        <option value=15>Own 15</option>
+        <option value=25>Own 25</option>
+        <option value=35>Own 35</option>
+        <option value=45>Own 45</option>
+        <option value=55>Opp 45</option>
+        <option value=65>Opp 35</option>
+        <option value=75>Opp 25</option>
+        <option value=85>Opp 15</option>
+        <option value=95>Opp 5</option>
+        </select>
+    </div>
+
+    <!-- Offensive Formation -->
+    <div class="choicesColumn">
+        <label for="offForm">Offensive Formation</label>
+        <select id="offForm">
+        <option value="Empty">Empty</option>
+        <option value="I-Form">I-Form</option>
+        <option value="Pistol">Pistol</option>
+        <option value="Shotgun">Shotgun</option>
+        <option value="Singleback">Singleback</option>
+        </select>
+    </div>
+
+    <!-- Receiver Alignment -->
+    <div class="choicesColumn">
+        <label for="recAlign">Receiver Alignment</label>
+        <select id="recAlign">
+            <option value="1x0">1x0</option>
+            <option value="1x1">1x1</option>
+            <option value="2x0">2x0</option>
+            <option value="2x1">2x1</option>
+            <option value="2x2">2x2</option>
+            <option value="3x0">3x0</option>
+            <option value="3x1">3x1</option>
+            <option value="3x2">3x2</option>
+            <option value="4x1">4x1</option>
+        </select>
+    </div>
+  
+    <!-- Defensive Alignment -->
+    <div class="choicesColumn">
+        <label for="defAlign">Defensive Alignment</label>
+        <select id="defAlign">
+            <option value="Cover 0">Cover 0</option>
+            <option value="Cover 1">Cover 1</option>
+            <option value="Cover 2">Cover 2</option>
+            <option value="Cover 3">Cover 3</option>
+            <option value="Cover 6">Cover 6</option>
+            <option value="Quarters">Quarters</option>
+        </select>
+    </div>
+
+    <!-- Defensive Coverage -->
+    <div class="choicesColumn">
+        <label for="defCov">Defensive Coverage</label>
+        <select id="defCov">
+            <option value="Man">Man</option>
+            <option value="Zone">Zone</option>
+        </select>
+      </div>
+  </div>
+
+
+    <div class="additionalViz">
+        <div class="vizColumn">
+            <textarea id="runningPlaysDescriptionTextBox" readonly></textarea>
+            <svg id="runningPlays"></svg>
+        </div>
+        <div class="vizColumn">
+            <textarea id="totalPlaysDescriptionTextBox" readonly></textarea>
+            <textarea id="totalPlaysTextBox" readonly></textarea>
+        </div>
+        <div class="vizColumn">
+            <textarea id="successRateDescriptionTextBox" readonly></textarea>
+            <textarea id="successRateTextBox" readonly></textarea>
+        </div>
+
+        
+    </div>
+
+  <svg id="field"></svg>
+  
+  <script>
+
+    // Set Labels
+    totalPlaysDescriptionTextBox.value = 'Total Plays'
+    runningPlaysDescriptionTextBox.value = 'Running Plays'
+    successRateDescriptionTextBox.value = 'Success Rate'
+
+//////////////////// CREATE FIELD //////////////////////////////////
+
+    // Set the dimensions of the field
+    const fieldLength = 120;  // in yards
+    const fieldWidth = 53.3;  // in yards
+
+    // Set the dimensions of the SVG canvas
+    const svgWidth = 1200;  // in pixels
+    const svgHeight = (svgWidth / fieldLength) * fieldWidth;  // maintain aspect ratio
+
+    // Scaling factors
+    const scaleX = svgWidth / fieldLength;  // 10 pixels per yard
+    const scaleY = svgHeight / fieldWidth;  // 10 pixels per yard
+
+    // Create the SVG element for the field
+    const svg = d3.select("#field")
+      .attr("width", svgWidth)
+      .attr("height", svgHeight);
+
+    // Draw the field background (green)
+    svg.append("rect")
+      .attr("x", 100)
+      .attr("y", 0)
+      .attr("width", svgWidth - 200)
+      .attr("height", svgHeight)
+      .attr("fill", "#06402B");
+
+    // Function to convert yards to pixels
+    const xToPixel = d3.scaleLinear()
+      .domain([0, fieldLength])
+      .range([0, svgWidth]);
+
+    const yToPixel = d3.scaleLinear()
+      .domain([0, fieldWidth])
+      .range([0, svgHeight]);
+
+    // Function to adjust x-axis for yard lines and numbers (shifting by 10 yards)
+    const adjustX = (x) => xToPixel(x + 10);  // Shift all x-values by 10 yards
+
+    // Add yard lines every 10 yards
+    for (let i = 0; i <= fieldLength; i += 10) {
+      svg.append("line")
+        .attr("x1", adjustX(i))
+        .attr("y1", 0)
+        .attr("x2", adjustX(i))
+        .attr("y2", svgHeight)
+        .attr("stroke", "white")
+        .attr("stroke-width", 2);
+    }
+
+    // Function to format yard numbers with a space between digits (e.g., 1 0)
+    const formatYardNumber = (num) => num.toString().split('').join(' ');  // Split the number into characters and join with space
+
+    // Add yard numbers
+    for (let i = 10; i < fieldLength - 20; i += 10) {
+      svg.append("text")
+        .attr("x", adjustX(i))
+        .attr("y", svgHeight - 10)
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .attr("font-size", "20px")
+        .attr("font-family", "Arial")
+        .text(i === 50 ? "5 0" : i > 50 ? formatYardNumber(100 - i) : formatYardNumber(i));
+
+      svg.append("text")
+        .attr("x", adjustX(i))
+        .attr("y", 10)
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .attr("font-size", "20px")
+        .attr("font-family", "Arial")
+        .attr("transform", "rotate(180 " + adjustX(i) + " " + 10 + ")")  // Rotate text by 180 degrees
+        .text(i === 50 ? "5 0" : i > 50 ? formatYardNumber(100 - i) : formatYardNumber(i));
+    }
+
+    // Add end zones
+    svg.append("rect")
+      .attr("x", xToPixel(0))
+      .attr("y", 0)
+      .attr("width", xToPixel(10))
+      .attr("height", svgHeight)
+      .attr("fill", "blue");
+
+    svg.append("rect")
+      .attr("x", xToPixel(110)) 
+      .attr("y", 0)
+      .attr("width", xToPixel(10)) 
+      .attr("height", svgHeight)
+      .attr("fill", "#62C6F2");
+
+    // Create arrow head for blitzers
+    svg.append("defs")
+        .append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "0 0 10 10")
+        .attr("refX", 10)
+        .attr("refY", 5)
+        .attr("markerWidth", 5)
+        .attr("markerHeight", 5)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M 0 0 L 10 5 L 0 10 z")  
+        .attr("fill", "red");  
+
+    // Create a tooltip div and set its initial visibility to hidden
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("visibility", "hidden")
+        .style("background-color", "rgba(0, 0, 0, 0.7)")
+        .style("color", "white")
+        .style("padding", "10px")
+        .style("border-radius", "5px")
+        .style("font-size", "12px")
+        .style("pointer-events", "none")
+        .style("width", "120px");;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function updateBallPosition() {
+        const ballPosition = parseInt(document.getElementById("ballPosition").value);
+
+
+        const ballX = adjustX(ballPosition);
+        const ballY = svgHeight / 2; // Center the ball vertically
+
+        // Remove existing ball if any
+        svg.selectAll("#ball").remove();
+
+        // Add the football (ellipse)
+        svg.append("ellipse")
+            .attr("id", "ball")
+            .attr("cx", ballX)
+            .attr("cy", ballY)
+            .attr("rx", 6) // Horizontal radius (half of the football's width)
+            .attr("ry", 4.5) // Vertical radius (half of the football's length)
+            .attr("fill", "brown");
+
+        // Filter the data based on the new ball position
+        var filteredData = filterData();
+
+        // Filter dropdowns based on filter selections
+        const filteredDropdowns = filterDropdowns("bp")
+
+        // Update dropdown based on filter selections
+        updateDropdown("offForm", filteredDropdowns, "offenseFormation");
+
+        // Update the visualization
+        updateOffensiveFormation();
+    }
+
+    function updateOffensiveFormation() {
+        const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        const offFormation = document.getElementById("offForm").value;
+
+        // Remove any existing backfield players
+        svg.selectAll(".offBackfield").remove();
+
+        // Initialize O-Line positions
+        let positions = [
+            { name: "LT", coords: [ballPosition - 2, svgHeight / 2 + 32] },
+            { name: "LG", coords: [ballPosition - 1.5, svgHeight / 2 + 16] },
+            { name: "C", coords: [ballPosition - 1, svgHeight / 2] },
+            { name: "RG", coords: [ballPosition - 1.5, svgHeight / 2 - 16] },
+            { name: "RT", coords: [ballPosition - 2, svgHeight / 2 - 32] }
+        ];
+
+        // Add backfield positions based on formation
+        const formationPositions = {
+            "Shotgun": [
+                { name: "QB", coords: [ballPosition - 5, svgHeight / 2] },
+                { name: "RB", coords: [ballPosition - 5, svgHeight / 2 + 20] }
+            ],
+            "I-Form": [
+                { name: "QB", coords: [ballPosition - 2.5, svgHeight / 2] },
+                { name: "FB", coords: [ballPosition - 5, svgHeight / 2] },
+                { name: "RB", coords: [ballPosition - 8, svgHeight / 2] }
+            ],
+            "Pistol": [
+                { name: "QB", coords: [ballPosition - 5, svgHeight / 2] },
+                { name: "RB", coords: [ballPosition - 8, svgHeight / 2] }
+            ],
+            "Singleback": [
+                { name: "QB", coords: [ballPosition - 2.5, svgHeight / 2] },
+                { name: "RB", coords: [ballPosition - 8, svgHeight / 2] }
+            ],
+            "Empty": [
+                { name: "QB", coords: [ballPosition - 5, svgHeight / 2] }
+            ]
+        };
+
+        // Merge positions
+        if (formationPositions[offFormation]) {
+            positions = positions.concat(formationPositions[offFormation]);
+        }
+
+        // Draw the players (circles) on the field
+        positions.forEach(player => {
+            svg.append("circle")
+                .attr("class", "offBackfield")
+                .attr("cx", adjustX(player.coords[0]))
+                .attr("cy", player.coords[1])
+                .attr("r", 7)
+                .attr("fill", "#62C6F2")
+                .attr("id", player.name);
+        });
+
+        // Filter the data based on the new offensive formation
+        var filteredData = filterData();
+
+        // Filter dropdowns based on filter selections
+        const filteredDropdowns = filterDropdowns("of")
+
+        // Update dropdown based on filter selections
+        updateDropdown("recAlign", filteredDropdowns, "receiverAlignment");
+
+        // Update the receiver visualization
+        updateReceiverAlignment();
+    }
+
+    function updateReceiverAlignment() {
+        const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        const offFormation = document.getElementById("offForm").value;
+        const recAlign = document.getElementById("recAlign").value;
+
+
+        // Remove any existing receivers
+        svg.selectAll(".receiver").remove();
+
+        let receivers = [];
+
+        switch (recAlign) {
+            case "1x0":
+                receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 + 180] },
+                    { name: "TE1", coords: [ballPosition - 2, svgHeight / 2 + 48] },
+                    { name: "TE2", coords: [ballPosition - 1, svgHeight / 2 - 48] }
+                );   
+                switch (offFormation) {
+                    case "Shotgun":
+                        receivers.pop();
+                        receivers.push(
+                            { name: "TE2", coords: [ballPosition - 2, svgHeight / 2 - 48] },
+                            { name: "TE3", coords: [ballPosition - 1, svgHeight / 2 - 64] }
+                        );
+                        break;
+                }
+                break;
+            case "1x1":
+            receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 + 180] },
+                    { name: "WR2", coords: [ballPosition - 1, svgHeight / 2 - 180] },
+                    { name: "TE1", coords: [ballPosition - 2, svgHeight / 2 + 48] }
+                );   
+                switch (offFormation) {
+                    case "Shotgun":
+                    case "Singleback":
+                        receivers.push(
+                            { name: "TE2", coords: [ballPosition - 2, svgHeight / 2 - 48] }
+                        );
+                        break;
+                }
+                break;
+            case "2x0":
+            receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 - 180] },
+                    { name: "WR2", coords: [ballPosition - 2, svgHeight / 2 - 90] },
+                    { name: "TE1", coords: [ballPosition - 1, svgHeight / 2 + 48] }
+                );
+                switch (offFormation) {
+                    case "Singleback":
+                        receivers.push(
+                            { name: "TE2", coords: [ballPosition - 2, svgHeight / 2 - 48] }
+                        );
+                        break;
+                }
+                break;
+            case "2x1":
+            receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 - 180] },
+                    { name: "WR2", coords: [ballPosition - 2, svgHeight / 2 - 90] },
+                    { name: "WR3", coords: [ballPosition - 1, svgHeight / 2 + 180] }
+                );
+                switch (offFormation) {
+                    case "Pistol":
+                    case "Shotgun":
+                    case "Singleback":
+                        receivers.push(
+                            { name: "TE1", coords: [ballPosition - 2, svgHeight / 2 + 48] }
+                        );
+                        break;
+                }   
+                break;
+            case "2x2":
+                receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 - 180] },
+                    { name: "WR2", coords: [ballPosition - 2, svgHeight / 2 - 90] },
+                    { name: "WR3", coords: [ballPosition - 2, svgHeight / 2 + 90] },
+                    { name: "WR4", coords: [ballPosition - 1, svgHeight / 2 + 180] }
+                );
+                break;
+            case "3x0":
+            receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 - 180] },
+                    { name: "WR2", coords: [ballPosition - 2, svgHeight / 2 - 135] },
+                    { name: "WR3", coords: [ballPosition - 2, svgHeight / 2 - 90] },
+                );
+                switch (offFormation) {
+                    case "Shotgun":
+                    case "Singleback":
+                        receivers.push(
+                            { name: "TE1", coords: [ballPosition - 1, svgHeight / 2 + 48] }
+                        );
+                        break;
+                }
+                break;
+            case "3x1":
+            receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 - 180] },
+                    { name: "WR2", coords: [ballPosition - 2, svgHeight / 2 - 135] },
+                    { name: "WR3", coords: [ballPosition - 2, svgHeight / 2 - 90] },
+                    { name: "WR4", coords: [ballPosition - 2, svgHeight / 2 + 90] },
+
+                );
+                break;
+            case "3x2":
+            receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 - 180] },
+                    { name: "WR2", coords: [ballPosition - 2, svgHeight / 2 - 135] },
+                    { name: "WR3", coords: [ballPosition - 2, svgHeight / 2 - 90] },
+                    { name: "WR4", coords: [ballPosition - 2, svgHeight / 2 + 135] },
+                    { name: "WR5", coords: [ballPosition - 1, svgHeight / 2 + 180] }
+                );
+                break;
+            case "4x1":
+            receivers.push(
+                    { name: "WR1", coords: [ballPosition - 1, svgHeight / 2 - 205] },
+                    { name: "WR2", coords: [ballPosition - 2, svgHeight / 2 - 160] },
+                    { name: "WR3", coords: [ballPosition - 2, svgHeight / 2 - 115] },
+                    { name: "WR4", coords: [ballPosition - 2, svgHeight / 2 - 70] },
+                    { name: "WR5", coords: [ballPosition - 1, svgHeight / 2 + 180] }
+                );
+
+        }
+
+        receivers.forEach(receiver => {
+        svg.append("circle")
+            .attr("class", "receiver")
+            .attr("cx", adjustX(receiver.coords[0]))
+            .attr("cy", receiver.coords[1])
+            .attr("r", 7)
+            .attr("fill", "#62C6F2")
+            .attr("id", receiver.name);
+        });
+
+        // Filter the data based on the new offensive formation
+        var filteredData = filterData();
+
+        // Filter dropdowns based on filter selections
+        const filteredDropdowns = filterDropdowns("ra")
+
+        // Update dropdown based on filter selections
+        updateDropdown("defAlign", filteredDropdowns, "pff_passCoverage");
+
+        // Update the defensive formation visualization
+        updateDefenseFormation()
+        
+    }
+
+    function updateDefenseFormation() {
+        const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        const defAlign = document.getElementById("defAlign").value;
+
+        // Get receiver positions
+        const receivers = svg.selectAll(".receiver").nodes();
+        let receiverPositions = receivers.map(node => ({
+            name: node.id,
+            cx: parseFloat(node.getAttribute("cx")),
+            cy: parseFloat(node.getAttribute("cy"))
+        }));
+
+        let wideouts = receiverPositions.filter(r => r.name.startsWith("WR"));
+        let TECount = receiverPositions.filter(r => r.name.startsWith("TE")).length;
+        let cyValues = receiverPositions.map(r => r.cy);
+        
+        const topReceiver = Math.max(...cyValues);
+        const bottomReceiver = Math.min(...cyValues);
+
+        let defenders = getBaseDefense(ballPosition);
+        let numLinebackers = calculateLinebackers(defAlign, wideouts.length);
+
+        addSafetiesAndCorners(defenders, defAlign, ballPosition, wideouts, topReceiver, bottomReceiver);
+        addLinebackers(defenders, ballPosition, numLinebackers);
+
+        switch (defAlign) {
+            case "Cover 3":
+                wideouts = wideouts.slice(1, -1); // Outside corners already placed
+                wideouts.forEach((receiver, index) => { 
+                    defenders.push({ name: `CB${index + 3}`, coords: [ballPosition + 5, receiver.cy] });
+                });
+                break;
+            default:
+                wideouts.forEach((receiver, index) => {
+                    defenders.push({ name: `CB${index + 1}`, coords: [ballPosition + 5, receiver.cy] });
+                });
+                break;
+        }
+        // Clear and redraw defenders
+        svg.selectAll(".defender").remove();
+        drawDefenders(defenders);
+
+        let filteredData = filterData();
+
+        // Filter dropdowns based on filter selections
+        const filteredDropdowns = filterDropdowns("da")
+
+        // Update dropdown based on filter selections
+        updateDropdown("defCov", filteredDropdowns, "pff_manZone");
+
+        updateDefenseCoverage();
+    }
+
+    function updateDefenseCoverage() {
+        const ballPosition = adjustX(parseInt(document.getElementById("ballPosition").value));
+        const offFormation = document.getElementById("offForm").value;
+        const defAlign = document.getElementById("defAlign").value;
+        const defCov = document.getElementById("defCov").value;
+        const defenders = svg.selectAll(".defender")._groups[0];
+        let receivers = Array.from(svg.selectAll(".receiver")._groups[0]);
+        const offBackfield = svg.selectAll(".offBackfield")._groups[0];
+
+        // Add RB and FB to receivers
+        offBackfield.forEach(player => {
+            if (["RB", "FB"].some(pos => player.id.includes(pos))) {
+                receivers.push(player);
+            }
+        });
+
+        // Filter out defensive linemen (RDE, RDT, LDT, LDE)
+        let eligibleDefenders = Array.from(defenders)
+            .filter(defender => {
+                const name = defender.id;
+                return !(name.startsWith("RDE") || name.startsWith("RDT") || name.startsWith("LDT") || name.startsWith("LDE"));
+            }); // Sort defenders alphabetically
+
+        // Remove any existing coverage visualization
+        svg.selectAll(".coverage").remove();
+
+        switch (defCov) {
+            case "Zone":
+                switch (defAlign){
+                    case "Cover 2":
+                        var safeties = Array.from(eligibleDefenders).filter(d => d.id.includes("FS") || d.id.includes("SS"));
+                        if (ballPosition == 1050) {
+                            drawZoneCoverage(ballPosition, safeties[0], [120, 125], [60,100], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [120, -125], [60,100], "blue")
+                        } else {
+                            drawZoneCoverage(ballPosition, safeties[0], [200, 125], [60,100], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [200, -125], [60,100], "blue")
+                        }
+
+                        var underneathDefenders = eligibleDefenders.filter(defender => !safeties.includes(defender));
+                        underneathDefenders = underneathDefenders.sort((a, b) => parseFloat(a.getAttribute("cy")) - parseFloat(b.getAttribute("cy")));
+                        
+                        var numUnderneath = underneathDefenders.length;
+                        var startY = -200; var spacing = 600 / (numUnderneath + 1);
+                        underneathDefenders.forEach((defender, index) => {
+                            var zoneX = 50;
+                            var color = "pink";
+                            if ([1, 2, 3].includes(index)) {
+                                zoneX += 40;
+                                color = "yellow"
+                            }
+                            var zoneY = startY + spacing * (index);
+                            drawZoneCoverage(ballPosition, defender, [zoneX, zoneY], [50, 50], color); // Pink zone
+                        });               
+                        break;
+                    case "Cover 3":
+                        var safety = Array.from(eligibleDefenders).find(d => d.id.includes("S"));
+                        var cb1 = Array.from(eligibleDefenders).find(d => d.id.includes("CB1"));
+                        var cb2 = Array.from(eligibleDefenders).find(d => d.id.includes("CB2"));
+                        if (ballPosition == 1050) {
+                            drawZoneCoverage(ballPosition, safety, [120, 0], [50,80], "blue")
+                            drawZoneCoverage(ballPosition, cb1, [120, 180], [50,80], "blue")
+                            drawZoneCoverage(ballPosition, cb2, [120, -180], [50,80], "blue")
+                        } else {
+                            drawZoneCoverage(ballPosition, safety, [200, 0], [50,80], "blue")
+                            drawZoneCoverage(ballPosition, cb1, [200, 180], [50,80], "blue")
+                            drawZoneCoverage(ballPosition, cb2, [200, -180], [50,80], "blue")
+                        }
+
+                        var underneathDefenders = eligibleDefenders.filter(defender => 
+                            defender !== safety && defender !== cb1 && defender !== cb2
+                        );
+                        underneathDefenders = underneathDefenders.sort((a, b) => parseFloat(a.getAttribute("cy")) - parseFloat(b.getAttribute("cy")));
+                        
+                        underneathDefenders.forEach((defender, index) => {
+                            if ([1, 2].includes(index)) {
+                                size = [50, 65]
+                                zoneX = 90;
+                                color = "yellow";
+                                if (index === 1) {
+                                    zoneY = -70
+                                } else {
+                                    zoneY = 70
+                                }
+                            }
+                            if ([0, 3].includes(index)) {
+                                size = [40, 55]
+                                zoneX = 50;
+                                color = "pink"
+                                if (index === 0) {
+                                    zoneY = -190
+                                } else {
+                                    zoneY = 190
+                                }
+                            }
+                            drawZoneCoverage(ballPosition, defender, [zoneX, zoneY], size, color); // Pink zone
+                        });
+                        break;
+                    case "Cover 6":
+                        var safeties = Array.from(eligibleDefenders).filter(d => d.id.includes("FS") || d.id.includes("SS"));
+                        if (ballPosition == 1050) {
+                            drawZoneCoverage(ballPosition, safeties[0], [120, 120], [60,90], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [120, -60], [60,60], "blue")
+                        } else {
+                            drawZoneCoverage(ballPosition, safeties[0], [200, 120], [60,90], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [200, -60], [60,60], "blue")
+                        }
+
+                        var underneathDefenders = eligibleDefenders.filter(defender => !safeties.includes(defender));
+                        underneathDefenders = underneathDefenders.sort((a, b) => parseFloat(a.getAttribute("cy")) - parseFloat(b.getAttribute("cy")));
+                        
+                        underneathDefenders.forEach((defender, index) => {
+                            if ([2,3].includes(index)) {
+                                size = [50, 65]
+                                zoneX = 90;
+                                color = "yellow";
+                                if (index === 2) {
+                                    zoneY = -70
+                                } else {
+                                    zoneY = 70
+                                }
+                            }
+                            if ([1, 4].includes(index)) {
+                                size = [40, 55]
+                                zoneX = 50;
+                                color = "pink"
+                                if (index === 1) {
+                                    zoneY = -190
+                                } else {
+                                    zoneY = 190
+                                }
+                            }
+                            if ([0].includes(index)) {
+                                if (ballPosition == 1050) {
+                                    zoneX = 120;
+                                } else {
+                                    zoneX = 200;
+                                }
+                                color = "blue"
+                                size = [60,60]
+                                zoneY = -180
+                            }
+                            drawZoneCoverage(ballPosition, defender, [zoneX, zoneY], size, color);
+                        }); 
+                        break;
+                    case "Quarters":
+                        var safeties = Array.from(eligibleDefenders).filter(d => d.id.includes("FS") || d.id.includes("SS"));
+                        if (ballPosition == 1050) {
+                            drawZoneCoverage(ballPosition, safeties[0], [120, 60], [60,60], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [120, -60], [60,60], "blue")
+                        } else {
+                            drawZoneCoverage(ballPosition, safeties[0], [200, 60], [60,60], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [200, -60], [60,60], "blue")
+                        }
+                        
+                        var underneathDefenders = eligibleDefenders.filter(defender => !safeties.includes(defender));
+                        underneathDefenders = underneathDefenders.sort((a, b) => parseFloat(a.getAttribute("cy")) - parseFloat(b.getAttribute("cy")));
+
+                        underneathDefenders.forEach((defender, index) => {
+                            if ([2].includes(index)) {
+                                size = [50, 65]
+                                zoneX = 90;
+                                color = "yellow";
+                                zoneY = 0;
+                                
+                            }
+                            if ([1, 3].includes(index)) {
+                                size = [40, 55]
+                                zoneX = 50;
+                                color = "pink";
+                                if (index === 1) {
+                                    zoneY = -190;
+                                } else {
+                                    zoneY = 190;
+                                }
+                            }
+                            if ([0,4].includes(index)) {
+                                if (ballPosition == 1050) {
+                                    zoneX = 120;
+                                } else {
+                                    zoneX = 200;
+                                }
+                                color = "blue";
+                                size = [60,60];
+                                if (index === 0) {
+                                    zoneY = -180;
+                                } else {
+                                    zoneY = 180;
+                                }
+                            }
+                            drawZoneCoverage(ballPosition, defender, [zoneX, zoneY], size, color);
+                        });        
+                        
+                        break;
+                }
+                break;
+            case "Man":
+                switch (defAlign){
+                    case "Cover 1":
+                        var safety = Array.from(eligibleDefenders).find(d => d.id.includes("S"));
+                        if (ballPosition == 1050) {
+                            drawZoneCoverage(ballPosition, safety, [120,0], [60,100], "blue")
+                        } else {
+                            drawZoneCoverage(ballPosition, safety, [200,0], [60,100], "blue")
+                        }
+
+                        eligibleDefenders = eligibleDefenders.filter(defender => defender !== safety);
+                        break;
+                    case "Cover 2":
+                        var safeties = Array.from(eligibleDefenders).filter(d => d.id.includes("FS") || d.id.includes("SS"));
+                        if (ballPosition == 1050) {
+                            drawZoneCoverage(ballPosition, safeties[0], [120, 125], [60,100], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [120, -125], [60,100], "blue")
+                        } else {
+                            drawZoneCoverage(ballPosition, safeties[0], [200, 125], [60,100], "blue")
+                            drawZoneCoverage(ballPosition, safeties[1], [200, -125], [60,100], "blue")
+                        }
+                        
+                        eligibleDefenders = eligibleDefenders.filter(defender => !safeties.includes(defender));
+                        break;
+                }
+
+                // Matchup defenders with elgible receivers
+                blitzers = assignManCoverage(eligibleDefenders, receivers);
+
+                // TODO: for each blitzer make arrow from center forwards 5 units
+                blitzers.forEach(blitzerId => {
+                    var blitzer = eligibleDefenders.find(defender => defender.id === blitzerId);
+                    if (blitzer) {
+                        var blitzerCX = parseFloat(blitzer.getAttribute("cx"));
+                        var blitzerCY = parseFloat(blitzer.getAttribute("cy"));
+                        svg.append("line")
+                            .attr("class", "coverage")
+                            .attr("x1", blitzerCX)
+                            .attr("y1", blitzerCY)
+                            .attr("x2", blitzerCX - 30)
+                            .attr("y2", blitzerCY)
+                            .attr("stroke", "red")
+                            .attr("stroke-width", 2)
+                            .attr("marker-end", "url(#arrowhead)");
+                    }
+                });
+                break; 
+        
+        }
+
+        let filteredData = filterData();
+
+        // Update Total Plays Counter
+        totalPlaysTextBox.value = `${filteredData.length}`
+
+        // Update Success Rate
+        positivePassPlays = filteredData
+            .filter(d => d.targetX !== "NA" && d.targetY !== "NA" && parseFloat(d.yardsGained) > 0);
+        
+        positiveRunPlays = filteredData.filter(d => d.passLength === "NA")
+            .filter(d => d.passLength === "NA" && parseFloat(d.yardsGained) > 0);
+
+        successRate = Math.round(((positivePassPlays.length + positiveRunPlays.length) / filteredData.length) * 100)
+        if (!isNaN(successRate)) {
+            successRate = `${successRate}%`;  // Format as percentage
+        } else {
+            successRate = `N/A`;  // Set as N/A if NaN
+        }
+
+        successRateTextBox.value = successRate;
+        
+        drawPassAttempts()
+        drawRunningPlays()
+    }
+
+    // Play result visualizations
+
+    function drawPassAttempts() {
+        const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        var filteredData = filterData()
+        var passAttempts = filteredData.filter(row => row.targetX !== "NA" && row.targetY !== "NA");
+
+        passAttempts = passAttempts.map(row => {
+
+            // Calculate line of scrimmage correction
+            var correctLOS = ballPosition - (parseInt(row.absoluteYardlineNumber) - 10);
+
+            // Adjust targetX by the line of scrimmage correction
+            row.targetX = parseFloat(row.targetX) + correctLOS;
+
+            return row;
+        });
+
+        passAttempts = passAttempts.map(row => {
+            if (row.passResult === "C") {
+                row.passResult = "Completion";  // Change "C" to "Completion"
+            } else if (row.passResult === "I") {
+                row.passResult = "Incompletion";  // Change "I" to "Incompletion"
+            } else if (row.passResult === "IN") {
+                row.passResult = "Interception";  // Change "IN" to "Interception"
+            }
+            return row;
+        });
+
+        // Remove any existing pass attempts
+        svg.selectAll(".passAttempt").remove();
+
+        passAttempts.forEach(passAttempt => {
+            // Calculate the pass coordinates based on the scaled X and Y
+            passX = passAttempt.targetX * scaleX;
+            passY = svgHeight - (passAttempt.targetY * scaleY); // Inverting Y for visualization
+
+            // Set the stroke color based on the pass result
+            let strokeColor;
+            switch (passAttempt.passResult) {
+                case "Completion": // Completion
+                    strokeColor = "#00FF00"; // Green
+                    break;
+                case "Incompletion": // Incompletion
+                    strokeColor = "#CCCCCC"; // Light gray
+                    break;
+                case "Interception": // Interception
+                    strokeColor = "#FF000D"; // Red
+                    break;
+            }
+
+            // Draw the cross (X) symbol to represent the pass outcome
+            svg.append("line")
+                .attr("class", "passAttempt")
+                .attr("x1", passX - 5)
+                .attr("y1", passY - 5)
+                .attr("x2", passX + 5)
+                .attr("y2", passY + 5)
+                .attr("stroke", strokeColor)
+                .attr("stroke-width", 3);
+
+            svg.append("line")
+                .attr("class", "passAttempt")
+                .attr("x1", passX - 5)
+                .attr("y1", passY + 5)
+                .attr("x2", passX + 5)
+                .attr("y2", passY - 5)
+                .attr("stroke", strokeColor)
+                .attr("stroke-width", 3)
+                .on("mouseover", function(event, d) {
+                    // Show the tooltip with information when hovering over a line
+                    tooltip.style("visibility", "visible")
+                        .html(`${passAttempt.possessionTeam} vs ${passAttempt.defensiveTeam} (${passAttempt.quarter} ${passAttempt.gameClock})<br>
+                        ${passAttempt.down} & ${passAttempt.yardsToGo} ${passAttempt.yardlineSide} ${passAttempt.yardlineNumber}<br>
+                        Pass Length: ${passAttempt.passLength}<br>
+                        Yards Gained: ${passAttempt.yardsGained}`)
+                        .style("top", (event.pageY + 10) + "px")
+                        .style("left", (event.pageX + 10) + "px");
+                })
+                .on("mouseout", function() {
+                    // Hide the tooltip when mouse leaves the line
+                    tooltip.style("visibility", "hidden");
+                });
+        });
+
+    }
+
+    function drawRunningPlays() {
+        var filteredData = filterData();
+        var runningPlays = filteredData.filter(d => d.passLength === "NA").map(d => {
+            d.yardsGained = parseFloat(d.yardsGained);  // Converts yardsGained to a numeric value
+            return d;
+        });  
+
+        const yardsGainedValues = runningPlays.map(d => d.yardsGained);
+
+        let q1 = quantile(yardsGainedValues, 0.25),
+            median = quantile(yardsGainedValues, 0.5),
+            q3 = quantile(yardsGainedValues, 0.75),
+            iqr = q3 - q1;
+
+        let min = Math.max(Math.min(...yardsGainedValues), q1 - 1.5 * iqr);
+        let max = Math.min(Math.max(...yardsGainedValues), q3 + 1.5 * iqr);
+        let outliers = yardsGainedValues.filter(d => d < min || d > max);
+
+        
+        let svg = d3.select("#runningPlays");
+        let width = svg.node().getBoundingClientRect().width;  // Get actual width of the container
+        let height = svg.node().getBoundingClientRect().height; 
+        let margin = { top: 20, right: 10, bottom: 40, left: 20 };
+        let plotWidth = width - margin.left - margin.right;
+        let plotHeight = height - margin.top - margin.bottom;
+
+        console.log(width)
+        console.log(height)
+
+        svg.selectAll("*").remove();
+        
+
+        let xScale = d3.scaleLinear().domain([-20, 20]).range([margin.left, plotWidth]);
+        let y = (height / 2) - 20;
+        
+        console.log(xScale(min))
+        console.log(xScale(q1))
+        console.log(xScale(q3))
+
+        // Draw whiskers
+        svg.append("line")
+            .attr("x1", xScale(min))
+            .attr("x2", xScale(q1))
+            .attr("y1", y)
+            .attr("y2", y)
+            .attr("class", "whisker");
+
+        svg.append("line")
+            .attr("x1", xScale(q3))
+            .attr("x2", xScale(max))
+            .attr("y1", y)
+            .attr("y2", y)
+            .attr("class", "whisker");
+
+        // Whisker end caps
+        svg.append("line")
+            .attr("x1", xScale(min))
+            .attr("x2", xScale(min))
+            .attr("y1", y - 10)
+            .attr("y2", y + 10)
+            .attr("class", "whisker");
+
+        svg.append("line")
+            .attr("x1", xScale(max))
+            .attr("x2", xScale(max))
+            .attr("y1", y - 10)
+            .attr("y2", y + 10)
+            .attr("class", "whisker");
+
+        // Draw Box (IQR)
+        svg.append("rect")
+            .attr("x", xScale(q1))
+            .attr("y", y - 20)
+            .attr("width", xScale(q3) - xScale(q1))
+            .attr("height", 40)
+            .attr("class", "box");
+
+        // Median line
+        svg.append("line")
+            .attr("x1", xScale(median))
+            .attr("x2", xScale(median))
+            .attr("y1", y - 20)
+            .attr("y2", y + 20)
+            .attr("class", "median");
+
+        // Outliers
+        svg.selectAll(".outlier")
+            .data(outliers)
+            .enter()
+            .append("circle")
+            .attr("cx", d => xScale(d))
+            .attr("cy", y)
+            .attr("r", 3)
+            .attr("class", "outlier");
+        
+
+        let xAxis = d3.axisBottom(xScale).ticks(10);
+
+        svg.append("g")
+            .attr("transform", `translate(0, ${height - margin.bottom + 5})`)
+            .call(xAxis);
+
+        // Add x-axis label
+        svg.append("text")
+            .attr("transform", `translate(${width / 2}, ${height - margin.bottom +40})`) // Position below the axis
+            .style("text-anchor", "middle") // Center the label
+            .attr("font-size", "14px") // Font size
+            .attr("fill", "black") // Label color
+            .text("Yards Gained"); // The label text
+
+        // If just one play draw only 1
+        if (yardsGainedValues.length == 1){
+            svg.selectAll(".box").remove();
+            svg.selectAll(".whisker").remove();
+        }
+
+        if (yardsGainedValues.length == 0){
+            svg.selectAll("*").remove();
+
+            // Display "No Running Plays"
+            d3.select("svg")
+                .append("text")
+                .attr("x", width / 2)
+                .attr("y", height / 2)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "36px")
+                .attr("fill", "red")
+                .text("No Running Plays");
+
+        }
+
+    }
+
+    // Helper Functions
+
+    function quantile(arr, q) {
+        const sorted = arr.sort((a, b) => a - b);
+        const pos = (sorted.length - 1) * q;
+        const base = Math.floor(pos);
+        const rest = pos - base;
+        if (sorted[base + 1] !== undefined) {
+            return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+        } else {
+            return sorted[base];
+        }
+    }
+
+    function getBaseDefense(ballPosition) {
+        return [
+            { name: "RDE", coords: [ballPosition + 1, svgHeight / 2 + 40] },
+            { name: "RDT", coords: [ballPosition + 1, svgHeight / 2 + 12] },
+            { name: "LDT", coords: [ballPosition + 1, svgHeight / 2 - 12] },
+            { name: "LDE", coords: [ballPosition + 1, svgHeight / 2 - 40] }
+        ];
+    }
+
+    function calculateLinebackers(defAlign, wideoutCount) {
+        switch (defAlign) {
+            case "Cover 0": return 7 - wideoutCount;
+            case "Cover 1": return 6 - wideoutCount;
+            case "Cover 2": return (wideoutCount === 1) ? 4 : 5 - wideoutCount;
+            case "Cover 3": return 6 - wideoutCount;
+            case "Cover 6": return (wideoutCount === 1) ? 4 : 5 - wideoutCount;
+            case "Quarters": return 5 - wideoutCount;
+            default: return 4;
+        }
+    }
+
+    function addSafetiesAndCorners(defenders, defAlign, ballPosition, wideouts, topReceiver, bottomReceiver) {
+        switch (defAlign) {
+            case "Cover 1":
+                defenders.push({ name: "S", coords: [ballPosition + 12, svgHeight / 2] });
+                break;
+            case "Cover 2":
+                defenders.push(
+                    { name: "SS", coords: [ballPosition + 10, svgHeight / 2 + 54] },
+                    { name: "FS", coords: [ballPosition + 10, svgHeight / 2 - 54] }
+                );
+                break;
+            case "Cover 6":
+                defenders.push(
+                    { name: "SS", coords: [ballPosition + 10, svgHeight / 2 + 54] },
+                    { name: "FS", coords: [ballPosition + 10, svgHeight / 2 - 54] }
+                );
+                break;
+            case "Quarters":
+                defenders.push(
+                    { name: "SS", coords: [ballPosition + 10, svgHeight / 2 + 54] },
+                    { name: "FS", coords: [ballPosition + 10, svgHeight / 2 - 54] }
+                );
+                break;
+            case "Cover 3":
+                defenders.push(
+                    { name: "S", coords: [ballPosition + 12, svgHeight / 2] },
+                    { name: "CB1", coords: [ballPosition + 7, topReceiver + 5] },
+                    { name: "CB2", coords: [ballPosition + 7, bottomReceiver - 5] }
+                );
+                break;
+        }
+    }
+
+    function addLinebackers(defenders, ballPosition, numLinebackers) {
+        const lbPositions = [
+            { name: "LB2", coords: [ballPosition + 5, svgHeight / 2 + 28] },
+            { name: "LB3", coords: [ballPosition + 5, svgHeight / 2 - 28] },
+            { name: "LB1", coords: [ballPosition + 5, svgHeight / 2] },
+            { name: "LB4", coords: [ballPosition + 5, svgHeight / 2 + 56] },
+            { name: "LB5", coords: [ballPosition + 5, svgHeight / 2 - 40] },
+            { name: "LB6", coords: [ballPosition + 2, svgHeight / 2 + 70] }
+        ];
+
+        defenders.push(...lbPositions.slice(0, numLinebackers));
+    }
+
+    function drawDefenders(defenders) {
+        defenders.forEach(defender => {
+            svg.append("circle")
+                .attr("class", "defender")
+                .attr("cx", adjustX(defender.coords[0]))
+                .attr("cy", defender.coords[1])
+                .attr("r", 7)
+                .attr("fill", "blue")
+                .attr("id", defender.name);
+        });
+    }
+
+    function drawZoneCoverage(ballPosition, defender, location, size, color) {
+        const defenderCX = parseFloat(defender.getAttribute("cx"));
+        const defenderCY = parseFloat(defender.getAttribute("cy"));
+
+        // Draw zone
+        svg.append("ellipse")
+                        .attr("class", "coverage")
+                        .attr("cx", ballPosition  + location[0])
+                        .attr("cy", (svgHeight / 2) + location[1])
+                        .attr("rx", size[0]) // Wider horizontally
+                        .attr("ry", size[1]) // Taller vertically
+                        .attr("fill", color)
+                        .attr("fill-opacity", 0.4)
+                        .attr("stroke", color)
+                        .attr("stroke-width", 1);
+
+        // Line from player to center of zone
+        svg.append("line")
+            .attr("class", "coverage")
+            .attr("x1", defenderCX)
+            .attr("y1", defenderCY)
+            .attr("x2", ballPosition + location[0])
+            .attr("y2", (svgHeight / 2) + location[1])
+            .attr("stroke", color)
+            .attr("stroke-width", 2);
+    }
+
+    function assignManCoverage(eligibleDefenders, receivers) {
+        let availableReceivers = Array.from(receivers).map(receiver => ({
+            id: receiver.id,
+            cx: parseFloat(receiver.getAttribute("cx")),
+            cy: parseFloat(receiver.getAttribute("cy")),
+            assigned: false
+        }));
+
+        let defenderPositions = eligibleDefenders.map(defender => ({
+            id: defender.id,
+            cx: parseFloat(defender.getAttribute("cx")),
+            cy: parseFloat(defender.getAttribute("cy")),
+            assigned: false
+        }));
+
+        let possibleAssignments = [];
+
+        // Compute all possible distances between defenders and receivers
+        defenderPositions.forEach(defender => {
+            availableReceivers.forEach(receiver => {
+                let distance = Math.sqrt((receiver.cx - defender.cx) ** 2 + (receiver.cy - defender.cy) ** 2);
+                possibleAssignments.push({
+                    defender: defender,
+                    receiver: receiver,
+                    distance: distance
+                });
+            });
+        });
+
+        // Sort assignments by distance (closest first)
+        possibleAssignments.sort((a, b) => a.distance - b.distance);
+
+        // Assign defenders to receivers ensuring one-to-one mapping
+        possibleAssignments.forEach(assignment => {
+            if (!assignment.defender.assigned && !assignment.receiver.assigned) {
+                assignment.defender.assigned = true;
+                assignment.receiver.assigned = true;
+
+                // Draw a line connecting the defender to the assigned receiver
+                svg.append("line")
+                    .attr("class", "coverage")
+                    .attr("x1", assignment.defender.cx)
+                    .attr("y1", assignment.defender.cy)
+                    .attr("x2", assignment.receiver.cx)
+                    .attr("y2", assignment.receiver.cy)
+                    .attr("stroke", "yellow")
+                    .attr("stroke-width", 2);
+            }
+        });
+
+        let blitzers = []
+        possibleAssignments.forEach(defender => {
+            if (defender.defender.assigned === false) {
+                blitzers.push(defender.defender.id)
+            }
+        });
+
+        drawPassAttempts()
+
+        return(blitzers)
+    }
+
+    // Dropdown Update Functions
+
+    function filterDropdowns(updatedField) {
+        const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        if (isNaN(ballPosition)) return dataset; // Ensure valid input
+
+        const offFormation = document.getElementById("offForm")?.value || null;
+        const recAlign = document.getElementById("recAlign")?.value || null;
+        const defAlign = document.getElementById("defAlign")?.value || null;
+        const yardRange = [ballPosition - 5, ballPosition + 5];
+
+        let filteredData = dataset.filter(row => {
+            const yardline = Number(row.absoluteYardlineNumber) - 10;
+            return yardline >= yardRange[0] && yardline <= yardRange[1];
+        });
+
+        if (updatedField === "of") {
+            filteredData = filteredData.filter(row => row.offenseFormation === offFormation);
+        }
+        if (updatedField === "ra") {
+            filteredData = filteredData.filter(row => 
+                row.offenseFormation === offFormation &&
+                row.receiverAlignment === recAlign
+            );
+        }
+        if (updatedField === "da") {
+            filteredData = filteredData.filter(row => 
+                row.offenseFormation === offFormation &&
+                row.receiverAlignment === recAlign &&
+                row.pff_passCoverage === defAlign
+            );
+            console.log(filteredData)
+        }
+
+        // if (updatedField === "bp") {
+        //     const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        //     var filteredData = dataset.filter(row => {
+        //         const yardline = Number(row.absoluteYardlineNumber) - 10;
+        //         return yardline >= ballPosition - 5 &&
+        //             yardline <= ballPosition + 5;
+        //     });
+
+        // }
+
+        // if (updatedField === "of") {
+        //     const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        //     const offFormation = document.getElementById("offForm").value;
+        //     var filteredData = dataset.filter(row => {
+        //         const yardline = Number(row.absoluteYardlineNumber) - 10;
+        //         return yardline >= ballPosition - 5 &&
+        //             yardline <= ballPosition + 5 &&
+        //             (row.offenseFormation === offFormation);
+        //     });
+        // }
+
+        // if (updatedField === "ra") {
+        //     const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        //     const offFormation = document.getElementById("offForm").value;
+        //     const recAlign = document.getElementById("recAlign").value;
+        //     var filteredData = dataset.filter(row => {
+        //         const yardline = Number(row.absoluteYardlineNumber) - 10;
+        //         return yardline >= ballPosition - 5 &&
+        //             yardline <= ballPosition + 5 &&
+        //             (row.offenseFormation === offFormation) &&
+        //             (row.receiverAlignment === recAlign);
+        //     });
+        // }
+
+        // if (updatedField === "da") {
+        //     const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        //     const offFormation = document.getElementById("offForm").value;
+        //     const recAlign = document.getElementById("recAlign").value;
+        //     const defAlign = document.getElementById("defAlign").value;
+        //     var filteredData = dataset.filter(row => {
+        //         const yardline = Number(row.absoluteYardlineNumber) - 10;
+        //         return yardline >= ballPosition - 5 &&
+        //             yardline <= ballPosition + 5 &&
+        //             (row.offenseFormation === offFormation) &&
+        //             (row.receiverAlignment === recAlign) &&
+        //             (row.pff_passCoverage === defAlign);
+        //     });
+        // }
+
+        // if (updatedField === "dc") {
+        //     const ballPosition = parseInt(document.getElementById("ballPosition").value);
+        //     const offFormation = document.getElementById("offForm").value;
+        //     const recAlign = document.getElementById("recAlign").value;
+        //     const defAlign = document.getElementById("defAlign").value;
+        //     const defCov = document.getElementById("defCov").value;
+        //     var filteredData = dataset.filter(row => {
+        //         const yardline = Number(row.absoluteYardlineNumber) - 10;
+        //         return yardline >= ballPosition - 5 &&
+        //             yardline <= ballPosition + 5 &&
+        //             (row.offenseFormation === offFormation) &&
+        //             (row.receiverAlignment === recAlign) &&
+        //             (row.pff_passCoverage === defAlign) &&
+        //             (row.pff_manZone === defCov);
+        //     });
+        // }
+
+        
+
+        return filteredData;
+    }
+
+    function updateDropdown(elementId, filteredData, dataKey) {
+        const dropdown = document.getElementById(elementId);
+        const previousSelection = dropdown.value;
+
+        // Clear existing options
+        dropdown.innerHTML = "";
+
+        // Get unique values from the filtered data
+        const uniqueValues = [...new Set(filteredData.map(row => row[dataKey]))].sort();
+
+        // Add new options
+        uniqueValues.forEach(value => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.text = value;
+            dropdown.appendChild(option);
+        });
+
+        // Restore previous selection if still valid; otherwise, select first available option
+        if (uniqueValues.includes(previousSelection)) {
+            dropdown.value = previousSelection;
+        } else if (uniqueValues.length > 0) {
+            dropdown.value = uniqueValues[0];
+        }
+
+        // console.log(`Updated ${elementId} dropdown options:`, uniqueValues);
+    }
+
+    // Data Update Function
+
+    function filterData() {
+    const ballPosition = parseInt(document.getElementById("ballPosition").value);
+    const offFormation = document.getElementById("offForm").value;
+    const recAlign = document.getElementById("recAlign").value;
+    const defAlign = document.getElementById("defAlign").value;
+    const defCov = document.getElementById("defCov").value;
+
+    // console.log("Filtering with:", { ballPosition, offFormation, recAlign, defAlign, defCov });
+
+    var filteredData = dataset.filter(row => {
+        const yardline = Number(row.absoluteYardlineNumber);
+        return yardline >= ballPosition + 5 &&
+               yardline <= ballPosition + 15 &&
+               (row.offenseFormation === offFormation) &&
+               (row.receiverAlignment === recAlign) &&
+               (row.pff_passCoverage === defAlign) &&
+               (row.pff_manZone === defCov);
+    });
+
+    // console.log("Filtered Data (After Dropdown Selection):", filteredData);
+    return filteredData;
+}
+
+//////////////////////////////// INITIALIZATION AND LISTENERS ////////////////////////////////
+
+    // Initialization
+    let dataset;
+    let timestamp = new Date().getTime(); 
+    d3.csv(`data/preprocessed_plays.csv?t=${timestamp}`).then(function(data) {
+        dataset = data;
+        document.getElementById("ballPosition").value = 25;
+        document.getElementById("offForm").value = "Shotgun";
+        document.getElementById("recAlign").value = "3x1";
+        document.getElementById("defAlign").value = "Cover 3";
+        document.getElementById("defCov").value = "Zone";
+        updateBallPosition();
+    });
+    
+    document.getElementById("ballPosition").addEventListener("change", updateBallPosition);
+    document.getElementById("offForm").addEventListener("change", updateOffensiveFormation);
+    document.getElementById("recAlign").addEventListener("change", updateReceiverAlignment);
+    document.getElementById("defAlign").addEventListener("change", updateDefenseFormation);
+    document.getElementById("defCov").addEventListener("change", updateDefenseCoverage);
+
+  </script>
+</body>
+</html>
